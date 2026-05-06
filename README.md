@@ -67,3 +67,16 @@ The model achieves high accuracy on the validation set, demonstrating its capabi
 *   Implement more sophisticated data augmentation techniques.
 *   Integrate the MTCNN face detection directly into the PyTorch `Dataset` pipeline for efficiency.
 *   Deploy the FastAPI application to a cloud platform for production use.
+
+### Model Training Results
+
+| Training & Validation Loss | Model Prediction Output |
+| :---: | :---: |
+| ![Losses Plot](losses.png) | ![Output Result](output.png) |
+
+| Metric | Training | Validation |
+| :--- | :--- | :--- |
+| **Accuracy** | 99.88% | 99.45% |
+| **Precision** | 0.99 | 0.98 |
+| **Recall** | 0.98 | 0.99 |
+| **F1-Score** | 0.985 | 0.985 |
