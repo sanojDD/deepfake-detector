@@ -11,12 +11,13 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",  # Your React dev URL
-        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+        "https://projects-ui-kappa.vercel.app",
+        "https://projects-bucigylf0-sanojdahs-projects.vercel.app" # Added this one
     ],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows GET, POST, etc.
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 def load_v2_model():
