@@ -8,16 +8,19 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://projects-ui-kappa.vercel.app",
+    "https://projects-bucigylf0-sanojdahs-projects.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "https://projects-ui-kappa.vercel.app",
-        "https://projects-bucigylf0-sanojdahs-projects.vercel.app" # Added this one
-    ],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Essential for POST/OPTIONS requests
+    allow_headers=["*"],  # Essential for Axios headers
 )
 
 def load_v2_model():
