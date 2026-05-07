@@ -1,3 +1,53 @@
+# import torch
+# import torch.nn as nn
+# from fastapi import FastAPI, UploadFile, File
+# from torchvision import models
+# import io
+# from utils import process_and_predict
+# from fastapi.middleware.cors import CORSMiddleware
+
+# app = FastAPI()
+
+# origins = [
+#     "http://localhost:5173",
+#     "http://127.0.0.1:5173",
+#     "https://projects-ui-kappa.vercel.app",
+#     "https://projects-bucigylf0-sanojdahs-projects.vercel.app",
+# ]
+
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=origins,
+#     allow_credentials=True,
+#     allow_methods=["*"],  # Essential for POST/OPTIONS requests
+#     allow_headers=["*"],  # Essential for Axios headers
+# )
+
+# def load_v2_model():
+#     model = models.efficientnet_b0()
+#     num_ftrs = model.classifier[1].in_features
+#     model.classifier[1] = nn.Sequential(
+#         nn.Linear(num_ftrs, 512),
+#         nn.ReLU(),
+#         nn.Dropout(0.3),
+#         nn.Linear(512, 2)
+#     )
+#     model.load_state_dict(torch.load("deepfake_detection_v2.pt", map_location='cpu'))
+#     model.eval()
+#     return model
+
+# detector_model = load_v2_model()
+
+# @app.get("/")
+# def home():
+#     return {"message": "Deepfake Detection API is Online"}
+
+# @app.post("/predict")
+# async def predict(file: UploadFile = File(...)):
+#     image_data = io.BytesIO(await file.read())
+#     result, confidence = process_and_predict(image_data, detector_model)
+#     return {"prediction": result, "confidence": confidence}
+
 import torch
 import torch.nn as nn
 from fastapi import FastAPI, UploadFile, File
@@ -8,23 +58,21 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://projects-ui-kappa.vercel.app",
-    "https://projects-bucigylf0-sanojdahs-projects.vercel.app",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[
+        "http://localhost:5173",
+        "https://projects-ui-kappa.vercel.app",
+        "https://projects-bucigylf0-sanojdahs-projects.vercel.app",
+    ],
     allow_credentials=True,
-    allow_methods=["*"],  # Essential for POST/OPTIONS requests
-    allow_headers=["*"],  # Essential for Axios headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 def load_v2_model():
-    model = models.efficientnet_b0()
+    # weights=None prevents it from trying to download 20MB of default weights
+    model = models.efficientnet_b0(weights=None)
     num_ftrs = model.classifier[1].in_features
     model.classifier[1] = nn.Sequential(
         nn.Linear(num_ftrs, 512),
@@ -32,11 +80,25 @@ def load_v2_model():
         nn.Dropout(0.3),
         nn.Linear(512, 2)
     )
-    model.load_state_dict(torch.load("deepfake_detection_v2.pt", map_location='cpu'))
+    
+    # Load state dict and immediately move to CPU
+    state_dict = torch.load("deepfake_detection_v2.pt", map_location=torch.device('cpu'))
+    model.load_state_dict(state_dict)
     model.eval()
+    
+    # Explicitly wrap in no_grad to save memory during inference
+    for param in model.parameters():
+        param.requires_grad = False
+        
     return model
 
-detector_model = load_v2_model()
+# Global variable for the model
+detector_model = None
+
+@app.on_event("startup")
+async def startup_event():
+    global detector_model
+    detector_model = load_v2_model()
 
 @app.get("/")
 def home():
@@ -44,6 +106,13 @@ def home():
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
+    if detector_model is None:
+        return {"error": "Model not loaded"}
+        
     image_data = io.BytesIO(await file.read())
-    result, confidence = process_and_predict(image_data, detector_model)
+    
+    # Use torch.no_grad() during the actual prediction to save RAM
+    with torch.no_grad():
+        result, confidence = process_and_predict(image_data, detector_model)
+        
     return {"prediction": result, "confidence": confidence}
