@@ -4,8 +4,20 @@ from fastapi import FastAPI, UploadFile, File
 from torchvision import models
 import io
 from utils import process_and_predict
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",  # Your React dev URL
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows GET, POST, etc.
+    allow_headers=["*"],  # Allows all headers
+)
 
 def load_v2_model():
     model = models.efficientnet_b0()
